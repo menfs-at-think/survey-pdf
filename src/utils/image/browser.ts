@@ -1,0 +1,60 @@
+import { BaseImageUtils, IImageInfo, IImageUtils } from '.';
+export class ImageUtils extends BaseImageUtils implements IImageUtils {
+    protected async _getImageInfo(url: string): Promise<IImageInfo> {
+        const pxToPt: number = 72.0 / 96.0;
+        const image = new Image();
+        image.crossOrigin='anonymous';
+        const response = await new Promise<IImageInfo>((resolve, reject) => {
+            image.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvas.height = image.naturalHeight * dpr;
+                canvas.width = image.naturalWidth * dpr;
+                ctx?.drawImage(image, 0, 0, image.naturalWidth * dpr, image.naturalHeight * dpr);
+                const dataUrl = canvas.toDataURL();
+                resolve({ data: dataUrl, width: image.naturalWidth * pxToPt, height: image.naturalHeight * pxToPt, id: this.getImageId() });
+            };
+            image.onerror = () => {
+                reject();
+            };
+            image.src = url;
+        });
+        return response;
+    }
+    private getCoverCanvasOptions(imageWidth: number, imageHeight: number, targetWidth: number, targetHeight: number) {
+        const aspectRatio = imageWidth / imageHeight;
+        const targetAspectRatio = targetWidth / targetHeight;
+        let drawWidth, drawHeight;
+        if (targetAspectRatio > aspectRatio) {
+            drawWidth = targetWidth;
+            drawHeight = targetWidth / aspectRatio;
+        } else {
+            drawHeight = targetHeight;
+            drawWidth = targetHeight * aspectRatio;
+        }
+        return { canvasWidth: targetWidth, canvasHeight: targetHeight, imageX: (targetWidth - drawWidth) / 2, imageY: (targetHeight - drawHeight) / 2, imageWidth: drawWidth, imageHeight: drawHeight };
+    }
+    public async applyImageFit(imageInfo: IImageInfo, imageFit: 'cover' | 'fill' | 'contain', targetWidth: number, targetHeight: number): Promise<IImageInfo> {
+        if(imageFit == 'cover') {
+            try {
+                const image = new Image();
+                if(!imageInfo.width || !imageInfo.height || !imageInfo.data || !targetWidth || !targetHeight) return imageInfo;
+                image.src = imageInfo.data instanceof Uint8Array ? URL.createObjectURL(new Blob([imageInfo.data])): imageInfo.data;
+                await image.decode();
+                const canvasOptions = this.getCoverCanvasOptions(imageInfo.width, imageInfo.height, targetWidth, targetHeight);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvasOptions.canvasWidth;
+                canvas.height = canvasOptions.canvasHeight;
+                ctx?.drawImage(image, canvasOptions.imageX, canvasOptions.imageY, canvasOptions.imageWidth, canvasOptions.imageHeight);
+                return { data: canvas.toDataURL(), width: targetWidth, height: targetHeight };
+            } catch {
+                return imageInfo;
+            }
+        } else {
+            return super.applyImageFit(imageInfo, imageFit, targetWidth, targetHeight);
+        }
+
+    }
+}

@@ -1,5 +1,5 @@
 {
-  "Categories": [
+  "Items": [
     {
       "Name": "overview",
       "Title": "Overview"
@@ -21,80 +21,271 @@
           "Title": "React"
         },
         {
-          "Name": "get-started-knockout",
-          "Title": "Knockout"
+          "Name": "get-started-html-css-javascript",
+          "Title": "HTML/CSS/JavaScript"
         },
         {
-          "Name": "get-started-jquery",
-          "Title": "jQuery"
+          "Name": "get-started-nodejs",
+          "Title": "Node.js"
+        },
+        {
+          "Name": "supported-browsers",
+          "Title": "Supported Browsers"
         }
       ]
     },
     {
-      "Name": "Customization-Options",
-      "Title": "Customization Options",
-      "Items": [
-        {
-          "Name": "Customization-Options",
-          "Title": "Customization Options"
-        },
-        {
-          "Name": "Options-in-Constructor",
-          "Title": "Options in SurveyPDF Constructor"
-        },
-        {
-          "Name": "Customization-ChangeFonts",
-          "Title": "Change Fonts"
-        },
-        {
-          "Name": "Customization-CustomRender-HeaderFooter",
-          "Title": "Custom Render - Header/Footer"
-        },
-        {
-          "Name": "Customization-CustomRender-QuestionElements",
-          "Title": "Custom Render - Question Elements"
-        }        
-      ]
-    },    
-    {
-      "Name": "HtmlToPdf",
-      "Title": "HTML to PDF"
+      "Name": "customize-pdf-form-settings",
+      "Title": "PDF Form Settings"
     },
     {
-      "Name": "MatrixToPdf",
-      "Title": "Matrix to PDF"
+      "Name": "pdf-appearance-customization",
+      "Title": "PDF Appearance Customization"
+    },
+        {
+      "Name": "customize-survey-question-rendering-in-pdf-form",
+      "Title": "Question Rendering"
     },
     {
-      "Name": "Save-Pdf",
-      "Title": "Save PDF"
+      "Name": "add-header-and-footer-to-pdf-form",
+      "Title": "Header and Footer"
+    },
+    {
+      "Name": "localization",
+      "Title": "Localization & Globalization"
+    },
+    {
+      "Name": "fill-pdf-form-with-web-form-responses",
+      "Title": "Fill PDF Form with Web Form Responses"
     },
     {
       "Name": "export-custom-components",
       "Title": "Export Custom Questions and Third-Party Components"
     },
     {
-      "Name": "PDF-Export-API",
+      "Name": "pdf-generator-api",
       "Title": "PDF Generator API",
       "Items": [
         {
-          "Name": "surveypdf",
-          "Title": "SurveyPDF"
+          "Name": "classes",
+          "Title": "Classes",
+          "Items": [
+            {
+              "Name": "surveypdf",
+              "Title": "SurveyPDF"
+            },
+            {
+              "Name": "pdfformfiller",
+              "Title": "PDFFormFiller"
+            },
+            {
+              "Name": "drawcanvas",
+              "Title": "DrawCanvas"
+            },
+            {
+              "Name": "doccontroller",
+              "Title": "DocController"
+            }
+          ]
         },
         {
-          "Name": "IDocOptions",
-          "Title": "IDocOptions"
-        },
-        {
-          "Name": "drawcanvas",
-          "Title": "DrawCanvas"
-        },
-        {
-          "Name": "pdfbrick",
-          "Title": "PdfBrick"
-        },
-        {
-          "Name": "doccontroller",
-          "Title": "DocController"
+          "Name": "interfaces",
+          "Title": "Interfaces",
+          "Items": [
+            {
+              "Name": "IDocOptions",
+              "Title": "IDocOptions"
+            },
+            {
+              "Name": "ipdfformfilleroptions",
+              "Title": "IPDFFormFillerOptions"
+            },
+            {
+              "Name": "IDynamicContentOptions",
+              "Title": "IDynamicContentOptions"
+            },
+            {
+              "Name": "IDocStyle",
+              "Title": "IDocStyle"
+            },
+            {
+              "Name": "ISurveyStyle",
+              "Title": "ISurveyStyle"
+            },
+            {
+              "Name": "IPanelStyle",
+              "Title": "IPanelStyle"
+            },
+            {
+              "Name": "IPageStyle",
+              "Title": "IPageStyle"
+            },
+            {
+              "Name": "IQuestionStyle",
+              "Title": "IQuestionStyle"
+            },
+            {
+              "Name": "IQuestionTextStyle",
+              "Title": "IQuestionTextStyle"
+            },
+            {
+              "Name": "IQuestionCheckboxStyle",
+              "Title": "IQuestionCheckboxStyle"
+            },
+            {
+              "Name": "IQuestionRankingStyle",
+              "Title": "IQuestionRankingStyle"
+            },
+            {
+              "Name": "IQuestionRadiogroupStyle",
+              "Title": "IQuestionRadiogroupStyle"
+            },
+            {
+              "Name": "IQuestionSliderStyle",
+              "Title": "IQuestionSliderStyle"
+            },
+            {
+              "Name": "IQuestionDropdownStyle",
+              "Title": "IQuestionDropdownStyle"
+            },
+            {
+              "Name": "IQuestionTagboxStyle",
+              "Title": "IQuestionTagboxStyle"
+            },
+            {
+              "Name": "IQuestionCommentStyle",
+              "Title": "IQuestionCommentStyle"
+            },
+            {
+              "Name": "IQuestionRatingStyle",
+              "Title": "IQuestionRatingStyle"
+            },
+            {
+              "Name": "IQuestionImagePickerStyle",
+              "Title": "IQuestionImagePickerStyle"
+            },
+            {
+              "Name": "IQuestionBooleanStyle",
+              "Title": "IQuestionBooleanStyle"
+            },
+            {
+              "Name": "IQuestionHtmlStyle",
+              "Title": "IQuestionHtmlStyle"
+            },
+            {
+              "Name": "IQuestionExpressionStyle",
+              "Title": "IQuestionExpressionStyle"
+            },
+            {
+              "Name": "IQuestionFileStyle",
+              "Title": "IQuestionFileStyle"
+            },
+            {
+              "Name": "IQuestionMatrixStyle",
+              "Title": "IQuestionMatrixStyle"
+            },
+            {
+              "Name": "IQuestionMatrixDropdownStyle",
+              "Title": "IQuestionMatrixDropdownStyle"
+            },
+            {
+              "Name": "IQuestionMatrixDynamicStyle",
+              "Title": "IQuestionMatrixDynamicStyle"
+            },
+            {
+              "Name": "IQuestionMultipleTextStyle",
+              "Title": "IQuestionMultipleTextStyle"
+            },
+            {
+              "Name": "IQuestionPanelDynamicStyle",
+              "Title": "IQuestionPanelDynamicStyle"
+            },
+            {
+              "Name": "ITextStyle",
+              "Title": "ITextStyle"
+            },
+            {
+              "Name": "IAlignedTextStyle",
+              "Title": "IAlignedTextStyle"
+            },
+            {
+              "Name": "IBorderStyle",
+              "Title": "IBorderStyle"
+            },
+            {
+              "Name": "IInputStyle",
+              "Title": "IInputStyle"
+            },
+            {
+              "Name": "IContainerStyle",
+              "Title": "IContainerStyle"
+            },
+            {
+              "Name": "ISelectionInputStyle",
+              "Title": "ISelectionInputStyle"
+            },
+            {
+              "Name": "ISeparatorStyle",
+              "Title": "ISeparatorStyle"
+            },
+            {
+              "Name": "ISurveySpacing",
+              "Title": "ISurveySpacing"
+            },
+            {
+              "Name": "IPanelSpacing",
+              "Title": "IPanelSpacing"
+            },
+            {
+              "Name": "IQuestionSpacing",
+              "Title": "IQuestionSpacing"
+            },
+            {
+              "Name": "ISelectBaseSpacing",
+              "Title": "ISelectBaseSpacing"
+            },
+            {
+              "Name": "IQuestionSliderSpacing",
+              "Title": "IQuestionSliderSpacing"
+            },
+            {
+              "Name": "IQuestionFileSpacing",
+              "Title": "IQuestionFileSpacing"
+            },
+            {
+              "Name": "IQuestionBooleanSpacing",
+              "Title": "IQuestionBooleanSpacing"
+            },
+            {
+              "Name": "IQuestionImagePickerSpacing",
+              "Title": "IQuestionImagePickerSpacing"
+            },
+            {
+              "Name": "IQuestionMatrixSpacing",
+              "Title": "IQuestionMatrixSpacing"
+            },
+            {
+              "Name": "IQuestionMultipleTextSpacing",
+              "Title": "IQuestionMultipleTextSpacing"
+            },
+            {
+              "Name": "IQuestionPanelDynamicSpacing",
+              "Title": "IQuestionPanelDynamicSpacing"
+            },
+
+            {
+              "Name": "idrawtextoptions",
+              "Title": "IDrawTextOptions"
+            },
+            {
+              "Name": "idrawimageoptions",
+              "Title": "IDrawImageOptions"
+            },
+            {
+              "Name": "pdfbrick",
+              "Title": "PdfBrick"
+            }
+          ]
         }
       ]
     }

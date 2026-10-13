@@ -1,0 +1,178 @@
+import { createEsmConfig, createUmdConfig } from './rollup.helpers.mjs';
+import { resolve } from 'node:path';
+import { fileURLToPath, URL } from 'node:url';
+import { existsSync, mkdirSync, writeFileSync, createReadStream, createWriteStream } from 'fs';
+import packageJSON from './package.json' with { type: "json" };
+const version = packageJSON.version;
+const buildPath = fileURLToPath(new URL('./build', import.meta.url));
+
+function emitNonSourceFiles() {
+    const buildPlatformJson = {
+        name: 'survey-pdf',
+        version: version,
+        homepage: 'https://surveyjs.io/pdf-generator',
+        author: 'DevSoft Baltic OÜ <info@devsoftbaltic.com>',
+        license: 'SEE LICENSE IN LICENSE',
+        licenseUrl: 'https://surveyjs.io/licensing',
+        description: 'Renders JSON-driven SurveyJS forms and their responses as PDF documents in the browser or Node.js: fillable interactive PDF forms (AcroForm) or static printouts.',
+        keywords: [
+            'survey',
+            'form',
+            'surveyjs',
+            'survey-library',
+            'form-library',
+            'pdf',
+            'pdf-generator',
+            'pdf-export',
+            'form-to-pdf',
+            'survey-to-pdf',
+            'print-form',
+            'export-form',
+            'fillable-pdf',
+            'editable-pdf',
+            'interactive-pdf-form',
+            'pdf-form',
+            'pdf-form-filler',
+            'acroform',
+            'jspdf',
+            'questionnaire'
+        ],
+        module: 'fesm/survey.pdf.mjs',
+        main: 'survey.pdf.js',
+        repository: {
+            type: 'git',
+            url: 'https://github.com/surveyjs/survey-pdf.git'
+        },
+        bugs: {
+            url: 'https://github.com/surveyjs/survey-pdf/issues'
+        },
+        typings: './typings/entries/pdf.d.ts',
+        peerDependencies: {
+            'survey-core': version
+        },
+        dependencies: {
+            "@csstools/css-color-parser": "^3.1.0",
+            '@types/node-fetch': '^2',
+            'jspdf': '^2.3.0 || ^3 || ^4',
+            'image-size': '^2',
+            'node-fetch': '^2',
+        },
+        exports: {
+            '.': {
+                'types': './typings/entries/pdf.d.ts',
+                'node': {
+                    'import': './fesm/survey.pdf.node.mjs',
+                    'require': './survey.pdf.node.js'
+                },
+                'import': './fesm/survey.pdf.mjs',
+                'require': './survey.pdf.js',
+            },
+            './survey.pdf.fonts': {
+                'import': './fesm/survey.pdf.fonts.mjs',
+                'require': './survey.pdf.fonts.js'
+            },
+            './pdf-form-filler': {
+                'types': './forms-typings/entries/forms.d.ts',
+                'node': {
+                    'import': './fesm/pdf-form-filler.node.mjs',
+                    'require': './pdf-form-filler.node.js'
+                },
+                'import': './fesm/pdf-form-filler.mjs',
+                'require': './pdf-form-filler.js'
+            },
+            "./layouts": {
+                "types": "./layouts/index.d.ts",
+                "import": "./fesm/layouts/index.mjs",
+                "require": "./layouts/index.js"
+            },
+            "./layouts/index": {
+                "types": "./layouts/index.d.ts",
+                "import": "./fesm/layouts/index.mjs",
+                "require": "./layouts/index.js"
+            },
+            "./layouts/*": {
+                "types": "./layouts/*.d.ts",
+                "default": "./layouts/*.js",
+            },
+        }
+    };
+    if (!existsSync(buildPath)) {
+        mkdirSync(buildPath);
+    }
+    writeFileSync(
+        buildPath + '/package.json',
+        JSON.stringify(buildPlatformJson, null, 2),
+        'utf8'
+    );
+    createReadStream('./LICENSE').pipe(
+        createWriteStream(buildPath + '/LICENSE')
+    );
+    createReadStream('./README.md').pipe(
+        createWriteStream(buildPath + '/README.md')
+    );
+}
+
+const external = [
+    'jspdf',
+    'survey-core',
+    'image-size',
+    'node-fetch',
+    '@csstools/css-calc',
+    '@csstools/css-color-parser',
+    '@csstools/css-parser-algorithms',
+    '@csstools/css-tokenizer',
+];
+const umdGlobals =
+{
+    'survey-core': 'Survey',
+    'jspdf': 'jspdf',
+    'image-size': 'image-size',
+    'node-fetch': 'node-fetch',
+    '@csstools/css-calc': '@csstools/css-calc',
+    '@csstools/css-color-parser': '@csstools/css-color-parser',
+    '@csstools/css-parser-algorithms': '@csstools/css-parser-algorithms',
+    '@csstools/css-tokenizer': '@csstools/css-tokenizer',
+};
+const globalName = 'SurveyPDF';
+
+if (process.env.emitNonSourceFiles === 'true') {
+    emitNonSourceFiles();
+}
+export default [
+    createEsmConfig({
+        sharedFileName: 'pdf-shared.mjs',
+        tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)),
+        external,
+        dir: resolve(buildPath, './fesm'),
+        input: {
+            'survey.pdf': fileURLToPath(new URL('./src/entries/pdf.ts', import.meta.url)),
+            'survey.pdf.node': fileURLToPath(new URL('./src/entries/pdf-node.ts', import.meta.url))
+        },
+        version
+    }),
+    createUmdConfig({
+        tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)),
+        external,
+        declarationDir: resolve(buildPath, './typings'),
+        dir: resolve(buildPath),
+        emitMinified: process.env.emitMinified === 'true',
+        globalName: globalName,
+        globals: umdGlobals,
+        input: {
+            'survey.pdf': fileURLToPath(new URL('./src/entries/pdf.ts', import.meta.url)),
+        },
+        version
+    }),
+    createUmdConfig({
+        tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)),
+        external,
+        dir: resolve(buildPath),
+        emitMinified: process.env.emitMinified === 'true',
+        globalName: globalName,
+        globals: umdGlobals,
+        input: {
+            'survey.pdf.node': fileURLToPath(new URL('./src/entries/pdf-node.ts', import.meta.url)),
+        },
+        version
+    })
+];

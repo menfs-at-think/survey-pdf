@@ -11,7 +11,8 @@
 * jsPDF AcroForm Plugin
 * @module AcroForm
 */
-var jspdf = require('jspdf');
+import { jsPDF } from "jspdf";
+
 (function (jsPDF, globalObj) {
     'use strict';
 
@@ -161,7 +162,7 @@ var jspdf = require('jspdf');
 
         var stream = [];
         var text = formObject.V || formObject.DV;
-        var calcRes = calculateX(formObject, text);
+        var calcRes = calculateX(formObject, pdfUnescape(text));
         var fontKey = scope.internal.getFont(formObject.fontName, formObject.fontStyle).id;
 
         //PDF 32000-1:2008, page 444
@@ -360,7 +361,8 @@ var jspdf = require('jspdf');
 
                 if (formObject.isUnicode) {
                     var fontList = {};
-                    fontList[scope.internal.getFont().id] = scope.internal.getFont();
+                    const font = scope.internal.getFont(formObject.fontName, formObject.fontStyle);
+                    fontList[font.id] = font;
                     var payload = {
                         text: line,
                         x: null,
@@ -370,7 +372,7 @@ var jspdf = require('jspdf');
                         },
                         mutex: {
                             pdfEscape: pdfEscape,
-                            activeFontKey: scope.internal.getFont().id,
+                            activeFontKey: font.id,
                             fonts: fontList,
                             activeFontSize: formObject.fontSize
                         }
@@ -1336,6 +1338,9 @@ var jspdf = require('jspdf');
             enumerable: true,
             configurable: true,
             get: function () {
+                if (this.isUnicode) {
+                    return _V;
+                }
                 if ((this instanceof AcroFormButton === true)) {
                     return pdfUnescape(_V.substr(1, _V.length - 1));
                 } else {
@@ -1344,10 +1349,16 @@ var jspdf = require('jspdf');
             },
             set: function (value) {
                 value = value.toString();
-                if ((this instanceof AcroFormButton === true)) {
-                    _V = '/' + value;
+                if (this.isUnicode) {
+                    _V = toUnicode(value);
+                    this.trueValue = value;
                 } else {
-                    _V = value;
+                    if ((this instanceof AcroFormButton === true)) {
+                        _V = '/' + value;
+                    } else {
+                        _V = value;
+                    }
+
                 }
             }
         });
@@ -2922,4 +2933,4 @@ var jspdf = require('jspdf');
         PasswordField: AcroFormPasswordField,
         Appearance: AcroFormAppearance
     };
-})(jspdf.jsPDF, (typeof window !== 'undefined' && window || typeof global !== 'undefined' && global));
+})(jsPDF, (typeof window !== 'undefined' && window || typeof global !== 'undefined' && global));

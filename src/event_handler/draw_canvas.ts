@@ -1,7 +1,6 @@
-import { IRect, IMargin, ISize, DocOptions, DocController } from '../doc_controller';
-import { IPdfBrick, PdfBrick } from '../pdf_render/pdf_brick';
+import { IRect, IMargin, ISize, DocController } from '../doc_controller';
+import { IPdfBrick } from '../pdf_render/pdf_brick';
 import { TextBrick } from '../pdf_render/pdf_text';
-import { TextBoldBrick } from '../pdf_render/pdf_textbold';
 import { SurveyHelper } from '../helper_survey';
 
 /**
@@ -54,7 +53,7 @@ export interface IDrawRectOptions {
     rect?: IRect;
 }
 /**
- * An object that configures rendering a piece of text.
+ * An object that configures rendering a text fragment.
  */
 export interface IDrawTextOptions extends IDrawRectOptions {
     /**
@@ -90,15 +89,23 @@ export interface IDrawImageOptions extends IDrawRectOptions {
      * A string value with a base64-encoded image to be drawn.
      */
     base64: string;
+    /**
+     * Specifies how to resize the image to fit it into its container.
+     *
+     * Default value: `"contain"` if [`applyImageFit`](https://surveyjs.io/pdf-generator/documentation/api-reference/idocoptions#applyImageFit) is enabled or `undefined` if not.
+     *
+     * Refer to the [`object-fit`](https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit) CSS property description for information on accepted values.
+     */
+    imageFit?: string;
 }
 
 /**
- * An object that describes a drawing area and enables you to draw an image or a piece of text within the area. You can access this object within functions that handle `SurveyPDF`'s [`onRenderHeader`](https://surveyjs.io/pdf-generator/documentation/api-reference/surveypdf#onRenderHeader) and [`onRenderFooter`](https://surveyjs.io/pdf-generator/documentation/api-reference/surveypdf#onRenderFooter) events.
+ * An object that describes a drawing area and enables you to draw an image or a text fragment within the area. You can access this object within functions that handle `SurveyPDF`'s [`onRenderHeader`](https://surveyjs.io/pdf-generator/documentation/api-reference/surveypdf#onRenderHeader) and [`onRenderFooter`](https://surveyjs.io/pdf-generator/documentation/api-reference/surveypdf#onRenderFooter) events.
  *
  * [View Demo](https://surveyjs.io/pdf-generator/examples/customize-header-and-footer-of-pdf-form/ (linkStyle))
  */
 export class DrawCanvas {
-    public constructor(protected packs: IPdfBrick[],
+    public constructor(public packs: IPdfBrick[],
         public controller: DocController,
         protected _rect: IRect,
         protected _countPages: number,
@@ -119,7 +126,7 @@ export class DrawCanvas {
         return this._pageNumber;
     }
     /**
-     * An object with coordinates of a rectangle that limits the drawing area.
+     * An object with coordinates of a rectangle that limits the drawing area. This object contain the following fields: `xLeft`, `xRight`, `yTop`, `yBot`.
      */
     public get rect(): IRect {
         return this._rect;
@@ -204,33 +211,32 @@ export class DrawCanvas {
         return rect;
     }
     /**
-     * Draws a piece of text within the drawing area.
-     * @param textOptions An object that configures the drawing.
+     * Draws a text fragment within the drawing area.
+     *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/customize-header-and-footer-of-pdf-form/ (linkStyle))
+     * @param textOptions An [`IDrawTextOptions`](https://surveyjs.io/pdf-generator/documentation/api-reference/idrawtextoptions) object that configures the drawing.
      */
     public drawText(textOptions: IDrawTextOptions): void {
         textOptions = SurveyHelper.clone(textOptions);
-        if (typeof textOptions.fontSize === 'undefined') {
-            textOptions.fontSize = DocOptions.FONT_SIZE;
-        }
         if (typeof textOptions.isBold === 'undefined') {
             textOptions.isBold = false;
         }
-        const textSize: ISize = this.controller.measureText(textOptions.text,
-            textOptions.isBold ? 'bold' : 'normal', textOptions.fontSize);
+        const style = SurveyHelper.getPatchedTextStyle(this.controller, {
+            fontStyle: textOptions.isBold ? 'bold' : 'normal',
+            fontSize: textOptions.fontSize,
+            fontName: this.controller.fontName,
+            fontColor: '#404040',
+        });
+        const textSize: ISize = this.controller.measureText(textOptions.text, style);
         const textRect: IRect = this.alignRect(textOptions, textSize);
-        if (!textOptions.isBold) {
-            this.packs.push(new TextBrick(null, this.controller,
-                textRect, textOptions.text));
-        }
-        else {
-            this.packs.push(new TextBoldBrick(null, this.controller,
-                textRect, textOptions.text));
-        }
-        (<PdfBrick>this.packs[this.packs.length - 1]).fontSize = textOptions.fontSize;
+        this.packs.push(new TextBrick(this.controller,
+            textRect, textOptions, style));
     }
     /**
      * Draws an image within the drawing area.
-     * @param imageOptions An object that configures drawing.
+     *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/customize-header-and-footer-of-pdf-form/ (linkStyle))
+     * @param imageOptions An [`IDrawImageOptions`](https://surveyjs.io/pdf-generator/documentation/api-reference/idrawimageoptions) object that configures drawing.
      */
     public async drawImage(imageOptions: IDrawImageOptions): Promise<void> {
         imageOptions = SurveyHelper.clone(imageOptions);
@@ -245,10 +251,12 @@ export class DrawCanvas {
             height: imageOptions.height
         };
         const imageRect: IRect = this.alignRect(imageOptions, imageSize);
+        this.controller.pushMargins(0, 0);
         this.packs.push(await SurveyHelper.createImageFlat(
             SurveyHelper.createPoint(imageRect, true, true),
-            null, this.controller, imageOptions.base64,
-            imageRect.xRight - imageRect.xLeft,
-            imageRect.yBot - imageRect.yTop));
+            null, this.controller, { link: imageOptions.base64,
+                width: imageRect.xRight - imageRect.xLeft,
+                height: imageRect.yBot - imageRect.yTop, objectFit: imageOptions.imageFit as any }, !!imageOptions.imageFit || this.controller.applyImageFit));
+        this.controller.popMargins();
     }
 }

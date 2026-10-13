@@ -3,9 +3,10 @@ import { IHTMLRenderType } from './flat_layout/flat_html';
 import { SurveyHelper } from './helper_survey';
 import { LocalizableString } from 'survey-core';
 // import Fonts from './fonts';
-import setRadioAppearance from './jspdf_plugins/acroform';
+import { getPatchedAcroFormCheckBox, getPatchedAcroFormComboBox, getPatchedAcroFormRadioButton, getPatchedAcroFormTextField } from './jspdf_plugins/acroform_patched';
 import './jspdf_plugins/acroform.js';
 import './jspdf_plugins/from_html.js';
+import { ITextStyle } from './style/types';
 
 export interface IPoint {
     /**
@@ -97,8 +98,9 @@ export interface IDocOptions {
      * - `"ledger"`
      * - `"tabloid"`
      * - `"credit-card"`
-     * - Array<Number> - custom page size in millimeters, for example, `[210.0, 297.0]`.
+     * - `[width, height]` - Custom page size in millimeters, for example, `[210, 297]`.
      *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/save-completed-forms-as-pdf-files/ (linkStyle))
      * @see orientation
      */
     format?: string | number[];
@@ -122,10 +124,9 @@ export interface IDocOptions {
      * - `"Times"`
      * - `"Symbol"`
      * - `"ZapfDingbats"`
-     * - `"Segoe"` (requires [additional configuration](https://surveyjs.io/Documentation/Pdf-Export?id=Customization-ChangeFonts))
-     * - [Custom font name](https://surveyjs.io/Documentation/Pdf-Export?id=Customization-ChangeFonts#use-custom-font)
+     * - [Custom font name](https://surveyjs.io/pdf-generator/documentation/customize-pdf-form-settings#custom-fonts)
      *
-     * [View Demo](/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
      * @see fontSize
      */
     fontName?: string;
@@ -137,24 +138,19 @@ export interface IDocOptions {
      *
      * Default value: `false`
      *
-     * [View Demo](/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
      * @see htmlRenderAs
      */
     useCustomFontInHtml?: boolean;
 
     /**
-     * Page margins. Set this property to an object with the following fields: `top`, `bot`, `left`, `right`.
+     * Page margins.
+     *
+     * Set this property to an object with the following fields: `top`, `bot`, `left`, `right`.
+     *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/save-completed-forms-as-pdf-files/ (linkStyle))
      */
     margins?: IMargin;
-
-    commercial?: boolean;
-
-    /**
-     * Removes watermarks from the exported document.
-     *
-     * > You can enable this property only if you have a SurveyJS PDF Generator [commercial license](https://surveyjs.io/pricing). It is illegal to enable this property without a license.
-     */
-    haveCommercialLicense?: boolean;
 
     /**
      * Specifies how to render [HTML questions](https://surveyjs.io/Documentation/Library?id=questionhtmlmodel) into PDF.
@@ -164,6 +160,8 @@ export interface IDocOptions {
      * - `"standard"` - Render HTML questions as selectable text.
      * - `"image"` - Render HTML questions as images.
      * - `"auto"` (default) - Select between the `"standard"` and `"image"` modes automatically based on the HTML content.
+     *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/split-html-image-across-pages/ (linkStyle))
      *
      * You can override this property for an individual HTML question. Set the question's `renderAs` property to `"standard"` or `"image"` in the survey JSON schema.
      * @see useCustomFontInHtml
@@ -179,6 +177,8 @@ export interface IDocOptions {
      * - `"auto"` (default) - Render matrix-like questions as tables if they fit into the available space. Otherwise, render the questions as lists.
      *
      * You can override this property for an individual matrix-like question. Set the question's `renderAs` property to `"list"` in the survey JSON schema.
+     * @see [IDynamicContentOptions.conditionalMatrixColumns](/pdf-generator/documentation/api-reference/idynamiccontentoptions#conditionalMatrixColumns)
+     * @see [IDynamicContentOptions.conditionalMatrixRows](/pdf-generator/documentation/api-reference/idynamiccontentoptions#conditionalMatrixRows)
      */
     matrixRenderAs?: 'auto' | 'list';
     useLegacyBooleanRendering?: boolean;
@@ -188,8 +188,8 @@ export interface IDocOptions {
      * Possible values:
      *
      * - `"text"` - Render read-only questions as plain text and custom primitives.
-     * - `"acroform"` - Use Acrobat Forms (AcroForms) to render questions that support them. Other questions are rendered in `"text"` mode.
-     * - `"auto"` (default) - Prefer the `"text"` mode but use `"acroform"` for File question type and links.
+     * - `"acroform"` - Use Adobe AcroForms to render questions that support them as interactive form elements switched to their native read-only state. Other questions are rendered in `"text"` mode.
+     * - `"auto"` (default) - Prefer the `"text"` mode but use `"acroform"` for [File Upload](https://surveyjs.io/form-library/documentation/api-reference/file-model) questions and links.
      */
     readonlyRenderAs?: 'auto' | 'text' | 'acroform';
 
@@ -203,7 +203,15 @@ export interface IDocOptions {
     compress?: boolean;
 
     /**
-     * Specifies whether to apply the [imageFit](https://surveyjs.io/Documentation/Library?id=questionimagemodel#imageFit) property to exported [Image](https://surveyjs.io/Documentation/Library?id=questionimagemodel) questions.
+     * Specifies whether to apply `imageFit` settings specified in the survey JSON schema to exported images.
+     *
+     * Default value: `false`
+     *
+     * This property applies the following settings:
+     *
+     * - [`imageFit`](https://surveyjs.io/form-library/documentation/api-reference/add-image-to-survey#imageFit) to exported [Image](https://surveyjs.io/form-library/documentation/api-reference/add-image-to-survey) questions
+     * - [`imageFit`](https://surveyjs.io/form-library/documentation/api-reference/image-picker-question-model#imageFit) to exported [Image Picker](https://surveyjs.io/form-library/documentation/api-reference/image-picker-question-model) questions
+     * - [`logoFit`](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#logoFit) to an exported logo in the survey header
      *
      * If you enable the `applyImageFit` property, the quality of images may be lower because they pass through several conversions. If `applyImageFit` is disabled, exported images fill the entire container and do not preserve their aspect ratio, but their quality remains the same because they are exported as is.
      */
@@ -215,28 +223,138 @@ export interface IDocOptions {
      * Default value: `false`
      */
     isRTL?: boolean;
+    /**
+     * Specifies whether to include only selected choices when PDF Generator renders a [Multi-Select Dropdown (Tag Box)](https://surveyjs.io/form-library/examples/how-to-create-multiselect-tag-box/) question.
+     *
+     * Default value: `false` (include all choices)
+     * @see [IDynamicContentOptions.conditionalChoices](/pdf-generator/documentation/api-reference/idynamiccontentoptions#conditionalChoices)
+     */
+    tagboxSelectedChoicesOnly?: boolean;
+
+    htmlToImageQuality?: number;
+    /**
+     * Specifies the height of the Other input field in rows.
+     *
+     * Default value: 2
+     * @since 3.0.0
+     * @see [IDynamicContentOptions.choiceComments](/pdf-generator/documentation/api-reference/idynamiccontentoptions#choiceComments)
+     */
+    otherRowsCount?: number;
+    showNavigation?: boolean;
+    /**
+     * Specifies which dynamic content to include in the PDF document regardless of the current survey answers.
+     *
+     * For more information, refer to the following documentation article or API reference:
+     *
+     * [Documentation: Dynamic Content](/pdf-generator/documentation/customize-pdf-form-settings#dynamic-content (linkStyle))
+     *
+     * [API Reference: IDynamicContentOptions](/pdf-generator/documentation/api-reference/idynamiccontentoptions (linkStyle))
+     */
+    dynamicContent?: IDynamicContentOptions;
+}
+
+/**
+ * Options for including dynamic content in the PDF document regardless of the current survey answers.
+ *
+ * Assign an object with these options to the [`IDocOptions.dynamicContent`](/pdf-generator/documentation/api-reference/idocoptions#dynamicContent) property:
+ *
+ * ```js
+ * const pdfDocOptions = {
+ *   dynamicContent: {
+ *     choiceComments: true,
+ *     // ...
+ *   }
+ * };
+ *
+ * const surveyPdf = new SurveyPDF.SurveyPDF(surveyJson, pdfDocOptions);
+ *
+ * // In modular applications:
+ * import { SurveyPDF } from "survey-pdf";
+ *
+ * const surveyPdf = new SurveyPDF(surveyJson, pdfDocOptions);
+ * ```
+ *
+ * [Documentation: Dynamic Content](/pdf-generator/documentation/customize-pdf-form-settings#dynamic-content (linkStyle))
+ */
+export interface IDynamicContentOptions {
+    /**
+     * Specifies whether to include [configured comment areas](/form-library/examples/individual-checkbox-comments/) for unselected choices.
+     *
+     * Default value: `false`
+     * @see [IDocOptions.otherRowsCount](/pdf-generator/documentation/api-reference/idocoptions#otherRowsCount)
+     * @see choiceNestedContent
+     */
+    choiceComments?: boolean;
+
+    /**
+     * Specifies whether to include [nested content](/form-library/examples/nest-follow-up-questions-within-choice-options/) for unselected choices.
+     *
+     * Default value: `false`
+     * @see choiceComments
+     * @see conditionalElements
+     */
+    choiceNestedContent?: boolean;
+
+    /**
+     * Specifies whether to include choices hidden by visibility conditions.
+     *
+     * Default value: `false`
+     * @see [IDocOptions.tagboxSelectedChoicesOnly](/pdf-generator/documentation/api-reference/idocoptions#tagboxSelectedChoicesOnly)
+     * @see conditionalElements
+     */
+    conditionalChoices?: boolean;
+
+    /**
+     * Specifies whether to include questions, panels, and pages hidden by visibility conditions.
+     *
+     * Default value: `false`
+     * @see choiceNestedContent
+     * @see conditionalChoices
+     */
+    conditionalElements?: boolean;
+
+    /**
+     * Specifies whether to include matrix columns hidden by visibility conditions.
+     *
+     * Default value: `false`
+     * @see [IDocOptions.matrixRenderAs](/pdf-generator/documentation/api-reference/idocoptions#matrixRenderAs)
+     * @see conditionalMatrixRows
+     */
+    conditionalMatrixColumns?: boolean;
+
+    /**
+     * Specifies whether to include matrix rows hidden by visibility conditions.
+     *
+     * Default value: `false`
+     * @see [IDocOptions.matrixRenderAs](/pdf-generator/documentation/api-reference/idocoptions#matrixRenderAs)
+     * @see conditionalMatrixColumns
+     */
+    conditionalMatrixRows?: boolean;
 }
 
 export class DocOptions implements IDocOptions {
     public static readonly MM_TO_PT = 72 / 25.4;
-    public static readonly FONT_SIZE = 14;
     protected _orientation: 'l' | 'p';
     protected _format: string | number[];
-    protected _fontSize: number;
+    protected _fontSize: number = 6;
+    protected _htmlToImageQuality: number;
     protected _fontName: string;
     public static SEGOE_NORMAL: string;
     public static SEGOE_BOLD: string;
     protected _base64Normal: string = undefined;
     protected _base64Bold: string = undefined;
     protected _useCustomFontInHtml: boolean;
-    protected _margins: IMargin;
+    protected _margins!: IMargin;
     protected _htmlRenderAs: IHTMLRenderType;
     protected _matrixRenderAs: 'auto' | 'list';
     protected _readonlyRenderAs: 'auto' | 'text' | 'acroform';
     protected _compress: boolean;
     protected _applyImageFit: boolean;
-    protected _useLegacyBooleanRendering: boolean
+    protected _useLegacyBooleanRendering: boolean;
     protected _isRTL: boolean;
+    protected _tagboxSelectedChoicesOnly: boolean;
+    protected _otherRowsCount: number;
+    protected _dynamicContent: IDynamicContentOptions;
     public constructor(options: IDocOptions) {
         if (typeof options.orientation === 'undefined') {
             if (typeof options.format === 'undefined' ||
@@ -250,10 +368,9 @@ export class DocOptions implements IDocOptions {
         if (Array.isArray(this._format)) {
             this._format = this._format.map(f => f * DocOptions.MM_TO_PT);
         }
-        this._fontSize = options.fontSize || DocOptions.FONT_SIZE;
         if(!options.fontName) {
             if(!DocOptions.SEGOE_BOLD && !DocOptions.SEGOE_NORMAL) {
-                this._fontName = SurveyHelper.STANDARD_FONT;
+                this._fontName = 'helvetica';
             } else {
                 this._fontName = 'segoe';
             }
@@ -273,24 +390,6 @@ export class DocOptions implements IDocOptions {
             this._base64Bold = DocOptions.SEGOE_BOLD;
         }
         this._margins = SurveyHelper.clone(options.margins);
-        if (typeof this._margins === 'undefined') {
-            this._margins = {};
-        }
-        if (typeof this._margins.top === 'undefined') {
-            this._margins.top = 10.0;
-        }
-        if (typeof this._margins.bot === 'undefined') {
-            this._margins.bot = 10.0;
-        }
-        if (typeof this._margins.left === 'undefined') {
-            this._margins.left = 10.0;
-        }
-        if (typeof this._margins.right === 'undefined') {
-            this._margins.right = 10.0;
-        }
-        Object.keys(this._margins).forEach((name: string) => {
-            (<any>this._margins)[name] = (<any>this._margins)[name] * DocOptions.MM_TO_PT;
-        });
         this._htmlRenderAs = options.htmlRenderAs || 'auto';
         this._matrixRenderAs = options.matrixRenderAs || 'auto';
         this._readonlyRenderAs = options.readonlyRenderAs || 'auto';
@@ -298,7 +397,20 @@ export class DocOptions implements IDocOptions {
         this._applyImageFit = options.applyImageFit || false;
         this._useLegacyBooleanRendering = options.useLegacyBooleanRendering || false;
         this._isRTL = options.isRTL || false;
+        this._tagboxSelectedChoicesOnly = options.tagboxSelectedChoicesOnly || false;
+        this._htmlToImageQuality = options.htmlToImageQuality ?? 1;
+        this._otherRowsCount = options.otherRowsCount ?? 2;
+        this._dynamicContent = SurveyHelper.mergeObjects({
+            choiceComments: false,
+            choiceNestedContent: false,
+            conditionalChoices: false,
+            conditionalElements: false,
+            conditionalMatrixColumns: false,
+            conditionalMatrixRows: false
+        }, options.dynamicContent || {});
     }
+    textFieldRenderAs?: 'singleLine' | 'multiLine';
+    showNavigation?: boolean;
     public get leftTopPoint(): IPoint {
         return {
             xLeft: this.margins.left,
@@ -350,12 +462,24 @@ export class DocOptions implements IDocOptions {
     public get isRTL(): boolean {
         return this._isRTL;
     }
+    public get tagboxSelectedChoicesOnly(): boolean {
+        return this._tagboxSelectedChoicesOnly;
+    }
+    public get htmlToImageQuality(): number {
+        return this._htmlToImageQuality;
+    }
+    public get otherRowsCount(): number {
+        return this._otherRowsCount;
+    }
+    public get dynamicContent(): IDynamicContentOptions {
+        return this._dynamicContent;
+    }
 }
 
 /**
- * The `DocController` object includes an API that allows you to configure the resulting PDF document. You can access this object within functions that handle the `SurveyPDF`'s [`onRender...`](https://surveyjs.io/pdf-generator/documentation/api-reference/surveypdf#onRenderFooter) events.
+ * The `DocController` object includes an API that allows you to configure main PDF document properties (font, margins, page width and height).
  *
- * [View Demo](https://surveyjs.io/pdf-generator/examples/how-to-use-adorners-in-pdf-forms/ (linkStyle))
+ * [View Demo](https://surveyjs.io/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
  */
 export class DocController extends DocOptions {
     private _doc: jsPDF;
@@ -368,7 +492,7 @@ export class DocController extends DocOptions {
             orientation: this.orientation,
             unit: 'pt',
             format: this.format,
-            compress: this.compress
+            compress: this.compress,
         };
         this._doc = new jsPDF(jspdfOptions);
         if (typeof this.base64Normal !== 'undefined' && !SurveyHelper.isFontExist(this, this.fontName)) {
@@ -376,17 +500,24 @@ export class DocController extends DocOptions {
             DocController.addFont(this.fontName, this.base64Bold, 'bold');
             this._doc = new jsPDF(jspdfOptions);
         }
-        setRadioAppearance(this._doc);
         this._useCustomFontInHtml = options.useCustomFontInHtml && SurveyHelper.isFontExist(this, this.fontName);
         this._helperDoc = new jsPDF(jspdfOptions);
-        this._doc.setFont(this.fontName);
-        this._helperDoc.setFont(this.fontName);
-        this._doc.setFontSize(this.fontSize);
-        this._helperDoc.setFontSize(this.fontSize);
+        this._doc.setFont('helvetica');
+        this._helperDoc.setFont('helvetica');
+        this._doc.setFontSize(6);
+        this._helperDoc.setFontSize(6);
         this._fontStyle = 'normal';
         this.marginsStack = [];
     }
     public static customFonts: { [name: string]: { normal: string, bold: string, italic: string, bolditalic: string } } = {};
+    /**
+     * Adds a custom font to the PDF Generator.
+     *
+     * [View Demo](https://surveyjs.io/pdf-generator/examples/change-font-in-pdf-form/ (linkStyle))
+     * @param fontName A custom name that you will use to apply the custom font.
+     * @param base64 The custom font as a Base64-encoded string. To encode your font to Base64, obtain it as a TTF file and use any TTF-to-Base64 online converter.
+     * @param fontStyle The style of the custom font: `"normal"`, `"bold"`, `"italic"`, or `"bolditalic"`.
+     */
     public static addFont(fontName: string, base64: string, fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic') {
         let font = DocController.customFonts[fontName];
         if (!font) {
@@ -426,6 +557,16 @@ export class DocController extends DocOptions {
         this._doc.setFontSize(fontSize);
         this._helperDoc.setFontSize(fontSize);
     }
+    private _lineHeightFactor: number;
+    public get lineHeightFactor(): number {
+        return this._lineHeightFactor;
+    }
+    public set lineHeightFactor(lineHeightFactor: number) {
+        this._lineHeightFactor = lineHeightFactor;
+        this._doc.setLineHeightFactor(lineHeightFactor);
+        this._helperDoc.setLineHeightFactor(lineHeightFactor);
+    }
+
     public get fontStyle(): string {
         return this._fontStyle;
     }
@@ -434,11 +575,8 @@ export class DocController extends DocOptions {
         this._doc.setFont(this._fontName, fontStyle);
         this._helperDoc.setFont(this._fontName, fontStyle);
     }
-    public measureText(text: string | LocalizableString | number = 1, fontStyle: string = this._fontStyle,
-        fontSize: number = this._fontSize): ISize {
-        const oldFontSize: number = this._helperDoc.getFontSize();
-        this._helperDoc.setFontSize(fontSize);
-        this._helperDoc.setFont(this._fontName, fontStyle);
+    public measureText(text: string | LocalizableString | number = 1, style?: Readonly<Partial<ITextStyle>>): ISize {
+        this.setTextStyle(style, true);
         const height: number = this._helperDoc.getLineHeight() / this._helperDoc.internal.scaleFactor;
         let width: number = 0.0;
         if (typeof text === 'number') {
@@ -449,8 +587,7 @@ export class DocController extends DocOptions {
             width = text.split('').reduce((sm: number, cr: string) =>
                 sm + this._helperDoc.getTextWidth(cr), 0.0);
         }
-        this._helperDoc.setFontSize(oldFontSize);
-        this._helperDoc.setFont(this._fontName, 'normal');
+        this.restoreTextStyle(true);
         return {
             width: width,
             height: height
@@ -496,7 +633,115 @@ export class DocController extends DocOptions {
     public addPage(): void {
         this.doc.addPage();
     }
+    public getCurrentPageIndex(): number {
+        return this.doc.getCurrentPageInfo().pageNumber - 1;
+    }
     public setPage(index: number): void {
         this.doc.setPage(index + 1);
+    }
+    private setColor(value: string, getOldColor: ()=> string, setColorFunc: (val: string) => void, gOpacityOption: string = 'opacity'): () => void {
+        const { doc } = this;
+        const oldColor = getOldColor();
+        const { color, opacity } = SurveyHelper.parseColor(value);
+        setColorFunc(color);
+        let needRestoreGraphicsState = false;
+        if(opacity !== undefined) {
+            doc.saveGraphicsState();
+            doc.setGState(new doc.GState({ [gOpacityOption]: opacity }));
+            needRestoreGraphicsState = true;
+        }
+        return () => {
+            setColorFunc(oldColor);
+            if(needRestoreGraphicsState) {
+                this.doc.restoreGraphicsState();
+            }
+        };
+    }
+    private drawColorRestoreCallbacks: Array<() => void> = [];
+    public setDrawColor(color: string) {
+        this.drawColorRestoreCallbacks.push(this.setColor(color, () => this.doc.getDrawColor(), (val) => this.doc.setDrawColor(val), 'stroke-opacity'));
+    }
+    public restoreDrawColor() {
+        if(this.drawColorRestoreCallbacks.length > 0) {
+            this.drawColorRestoreCallbacks.pop()();
+        }
+    }
+    private fillColorRestoreCallbacks: Array<() => void> = [];
+    public setFillColor(color: string) {
+        this.fillColorRestoreCallbacks.push(this.setColor(color, () => this.doc.getFillColor(), (val) => this.doc.setFillColor(val)));
+    }
+    public restoreFillColor() {
+        if(this.fillColorRestoreCallbacks.length > 0) {
+            this.fillColorRestoreCallbacks.pop()();
+        }
+    }
+    private textColorRestoreCallbacks: Array<() => void> = [];
+    public setTextColor(color: string) {
+        this.textColorRestoreCallbacks.push(this.setColor(color, () => this.doc.getTextColor(), (val) => this.doc.setTextColor(val)));
+    }
+    public restoreTextColor() {
+        if(this.textColorRestoreCallbacks.length > 0) {
+            this.textColorRestoreCallbacks.pop()();
+        }
+    }
+    private textStyleRestoreCallbacks: Array<{ isHelper: boolean, callback: () => void }> = [];
+    public setTextStyle(style?: ITextStyle, isHelper: boolean = false) {
+        const doc = isHelper ? this.helperDoc : this.doc;
+        const oldFontSize = doc.getFontSize();
+        const oldFont = doc.getFont();
+        const oldLineHeightFactor = doc.getLineHeightFactor();
+        const fontSize = style?.fontSize ?? oldFontSize;
+        const needApplyColor = style?.fontColor && !isHelper;
+        doc.setFont(style?.fontName ?? oldFont.fontName, style?.fontStyle ?? oldFont.fontStyle);
+        doc.setFontSize(fontSize);
+        doc.setLineHeightFactor((style?.lineHeight ?? fontSize) / fontSize);
+        if(needApplyColor) {
+            this.setTextColor(style.fontColor);
+        }
+        this.textStyleRestoreCallbacks.push({ isHelper: isHelper, callback: () => {
+            doc.setFont(oldFont.fontName, oldFont.fontStyle);
+            doc.setFontSize(oldFontSize);
+            doc.setLineHeightFactor(oldLineHeightFactor);
+            if(needApplyColor) {
+                this.restoreTextColor();
+            }
+        } });
+    }
+    public restoreTextStyle(isHelper: boolean = false) {
+        const index = this.textStyleRestoreCallbacks.length - 1 - this.textStyleRestoreCallbacks.slice().reverse().findIndex((value) => {
+            return value.isHelper === isHelper;
+        });
+        if(index < this.textStyleRestoreCallbacks.length) {
+            this.textStyleRestoreCallbacks.splice(index, 1)[0].callback();
+        }
+    }
+
+    private _AcroFormCheckBox: ({ new(): any });
+    public get AcroFormCheckBox() {
+        if(!this._AcroFormCheckBox) {
+            this._AcroFormCheckBox = getPatchedAcroFormCheckBox(this.doc);
+        }
+        return this._AcroFormCheckBox;
+    }
+    private _AcroFormComboBox: ({ new(): any });
+    public get AcroFormComboBox() {
+        if(!this._AcroFormComboBox) {
+            this._AcroFormComboBox = getPatchedAcroFormComboBox(this.doc);
+        }
+        return this._AcroFormComboBox;
+    }
+    private _AcroFormTextField: ({ new(): any });
+    public get AcroFormTextField() {
+        if(!this._AcroFormTextField) {
+            this._AcroFormTextField = getPatchedAcroFormTextField(this.doc);
+        }
+        return this._AcroFormTextField;
+    }
+    private _AcroFormRadioButton: ({ new(): any });
+    public get AcroFormRadioButton() {
+        if(!this._AcroFormRadioButton) {
+            this._AcroFormRadioButton = getPatchedAcroFormRadioButton(this.doc);
+        }
+        return this._AcroFormRadioButton;
     }
 }

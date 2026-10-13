@@ -1,20 +1,14 @@
-import { IQuestion, Serializer } from 'survey-core';
-import { SurveyPDF } from '../survey';
-import { DocController } from '../doc_controller';
-import { FlatRepository } from './flat_repository';
+import { QuestionMatrixDynamicModel, Serializer } from 'survey-core';
 import { FlatMatrixMultiple } from './flat_matrixmultiple';
+import { FlatRepository } from './flat_repository';
 
-export class FlatMatrixDynamic extends FlatMatrixMultiple {
-    public constructor(protected survey: SurveyPDF,
-        question: IQuestion, controller: DocController) {
-        super(survey, question, controller, false);
-    }
-}
+export class FlatMatrixDynamic extends FlatMatrixMultiple<QuestionMatrixDynamicModel> {}
 
 Serializer.removeProperty('matrixdynamic', 'renderAs');
 Serializer.addProperty('matrixdynamic', {
     name: 'renderAs',
     default: 'auto',
+    visible: false,
     choices: ['auto', 'list']
 });
 FlatRepository.getInstance().register('matrixdynamic', FlatMatrixDynamic);

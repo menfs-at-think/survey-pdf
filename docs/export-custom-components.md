@@ -11,7 +11,7 @@ This help topic describes how to export custom questions that use [third-party c
 
 SurveyJS PDF Generator exports custom questions as plain non-editable text that displays question values.
 
-![SurveyJS PDF Generator - Render custom questions as text](images/export-custom-question-as-text.png)
+<img src="images/export-custom-question-as-text.png" alt="SurveyJS PDF Generator: Render custom questions as text" width="772" height="350">
 
 Since this is the default behavior, you do not need to specifically configure it.
 
@@ -22,18 +22,27 @@ If your custom question extends one of the out-of-the-box question types ([`Ques
 
 ```js
 import { FlatRepository } from "survey-pdf";
+import { QuestionTextModel } from "survey-core";
 
+const CUSTOM_TYPE = "color-picker";
+
+export class QuestionColorPickerModel extends QuestionTextModel {
+  getType() {
+    return CUSTOM_TYPE;
+  }
+  //...
+}
 FlatRepository.register(
-  "color-picker",
+  CUSTOM_TYPE,
   FlatRepository.getRenderer("text")
 );
 ```
 
 The image below illustrates the result:
 
-![SurveyJS PDF Generator - Export custom questions using a predefined renderer](images/export-custom-question-with-predefined-renderer.png)
+<img src="images/export-custom-question-with-predefined-renderer.png" alt="SurveyJS PDF Generator: Export custom questions using a predefined renderer" width="772" height="358">
 
-[View CodeSandbox Example](https://codesandbox.io/s/heuristic-star-81nso2?file=/src/SurveyPdfComponent.jsx:3273-3347 (linkStyle))
+[View CodeSandbox Example](https://codesandbox.io/p/sandbox/surveyjs-pdf-generator-use-a-predefined-renderer-forked-7xsdsm (linkStyle))
 
 ## Implement a Custom PDF Brick
 
@@ -41,6 +50,8 @@ If none of the previous options is suitable for your scenario, you can implement
 
 
 ```js
+import { PdfBrick } from "survey-pdf";
+
 class CustomPdfBrick extends PdfBrick {
   async renderInteractive() {
     const doc = this.controller.doc;
@@ -55,9 +66,9 @@ class CustomPdfBrick extends PdfBrick {
 To use this custom PDF brick, you need to configure a custom renderer. Create a custom class that extends the `FlatQuestion` class and implement the `generateFlatsContent()` method within it. This method accepts a drawing start point and returns an array of PDF bricks. Register the custom class as a renderer for your custom question type (`"color-picker"` in the code below).
 
 ```js
-import { FlatRepository } from "survey-pdf";
+import { FlatRepository, FlatQuestion } from "survey-pdf";
 
-/** Custom PDF brick configuration goes here */
+/* Custom PDF brick configuration goes here */
 
 class FlatCustomColor extends FlatQuestion {
   async generateFlatsContent(point) {
@@ -73,6 +84,6 @@ FlatRepository.register("color-picker", FlatCustomColor);
 
 The following image demonstrates the exported PDF document:
 
-![SurveyJS PDF Generator - Export custom questions using a custom PDF brick](images/export-custom-question-with-custom-pdf-brick.png)
+<img src="images/export-custom-question-with-custom-pdf-brick.png" alt="SurveyJS PDF Generator: Export custom questions using a custom PDF brick" width="772" height="358">
 
-[View CodeSandbox Example](https://codesandbox.io/s/gracious-fermat-5n19tr?file=/src/SurveyPdfComponent.jsx:3189-3835 (linkStyle))
+[View CodeSandbox Example](https://codesandbox.io/p/sandbox/focused-agnesi-qcn488 (linkStyle))
